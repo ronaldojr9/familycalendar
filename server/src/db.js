@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = process.env.FAMILY_HUB_DATA || path.join(__dirname, '..', 'data');
+export const dataDir = process.env.FAMILY_HUB_DATA || path.join(__dirname, '..', 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 
 export const db = new Database(path.join(dataDir, 'familyhub.db'));
