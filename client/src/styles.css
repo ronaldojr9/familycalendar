@@ -347,6 +347,11 @@ h1, h2, h3 { margin: 0 0 10px; }
 .weekday-dot { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); font-weight: 700; }
 .weekday-dot.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+/* Checkbox line inside a form (e.g. the trash-day holiday rule). */
+.check-row { min-height: 44px; margin-bottom: 14px; cursor: pointer; align-items: flex-start; }
+.check-row input[type='checkbox'] { width: 24px; height: 24px; flex: none; margin-top: 2px; accent-color: var(--accent); }
+.check-row > span { font-size: 15px; line-height: 1.35; }
+
 /* ---------- modals ---------- */
 
 .modal-backdrop {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db, getHousehold, starBalance } from './db.js';
 import { hashPin, verifyPin, requirePin } from './pin.js';
 import { expandEvent, choreDueOn } from './recurrence.js';
+import { holidayChecker } from './holidays.js';
 import { getForecast, geocode } from './weather.js';
 import { broadcast } from './ws.js';
 
@@ -209,14 +210,21 @@ api.get('/chores', (req, res) => {
   res.json({ chores: chores.map((c) => ({ ...c, active: !!c.active })) });
 });
 
+// Holidays matter to chores that carry the '|holiday-shift' modifier (trash day).
+function householdHolidays() {
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'extra_holidays'").get();
+  return holidayChecker(row?.value);
+}
+
 // Board for a given date: which chores are due, and which are done.
 api.get('/chores/board', (req, res) => {
   const date = String(req.query.date || new Date().toISOString().slice(0, 10));
   const chores = db.prepare('SELECT * FROM chore WHERE active = 1 ORDER BY time_of_day, id').all();
   const completions = db.prepare('SELECT * FROM chore_completion WHERE date = ?').all(date);
   const done = new Map(completions.map((c) => [c.chore_id, c]));
+  const holidays = householdHolidays();
   const due = chores
-    .filter((c) => choreDueOn(c, date))
+    .filter((c) => choreDueOn(c, date, holidays))
     .map((c) => ({ ...c, active: true, completed: done.has(c.id), completed_at: done.get(c.id)?.completed_at || null }));
   res.json({ date, chores: due });
 });
