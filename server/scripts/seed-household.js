@@ -101,6 +101,8 @@ const ROBOTICS = { member: 'Paul', days: [1, 2], start: '15:00', end: '16:30', f
 const VENUES = {
   yankton: ['Yankton Trail Park', '3901 South Minnesota Avenue, Sioux Falls, SD, 57108, US'],
   tomar: ['Tomar Park', '100 West Twin Oaks Road, Sioux Falls, SD, 57105, US'],
+  harrisburgEast: ['Harrisburg East Middle School', 'Sioux Falls, SD, 57108, US'],
+  horizon: ['Harrisburg Horizon Elementary', '5800 Bahnson Avenue, Sioux Falls, SD, 57108, US'],
 };
 
 // John — U10 Boys Oaks.
@@ -122,6 +124,17 @@ const PAUL_GAMES = [
   ['2026-10-12', '19:30', '21:15', 'SaberCats vs Tornadoes', 'yankton', '10S'],
   ['2026-10-19', '19:30', '21:15', 'SaberCats vs Rebels', 'yankton', '12'],
   ['2026-10-27', '19:30', '21:15', 'Bluejays vs SaberCats', 'yankton', '10N'],
+];
+
+// Paul's practices are dated rather than recurring: they land on Mondays and
+// Thursdays but skip any week where a game takes the slot, so there is no rule
+// that expresses them. [date, start, end, venue].
+const PAUL_PRACTICES = [
+  ['2026-09-03', '18:00', '19:30', 'harrisburgEast'],
+  ['2026-09-07', '18:00', '19:30', 'harrisburgEast'],
+  ['2026-09-10', '18:00', '19:30', 'horizon'],
+  ['2026-09-17', '18:00', '19:30', 'harrisburgEast'],
+  ['2026-09-21', '18:00', '19:30', 'harrisburgEast'],
 ];
 
 // John's practice: every Wednesday, 6:00–7:30pm, through the end of the season.
@@ -380,7 +393,16 @@ seedEvents();
 // duplicates; a rescheduled game gets added as a new one, and the old row is
 // left alone to be deleted in the app.
 function upsertEvent({ title, startAt, endAt, rule = '', location = '', description = '', member, icon = '', color = null, allDay = false }) {
-  const existing = db.prepare('SELECT * FROM event WHERE title = ? AND start_at = ?').get(title, startAt);
+  // Matched on title + start + who it belongs to: both boys can have a
+  // "Soccer practice" at 6pm on the same evening and they are different events.
+  const wanted = member ? memberIds[member] : null;
+  const existing = db
+    .prepare('SELECT * FROM event WHERE title = ? AND start_at = ?')
+    .all(title, startAt)
+    .find((e) => {
+      const owner = db.prepare('SELECT member_id FROM event_member WHERE event_id = ?').get(e.id)?.member_id ?? null;
+      return owner === wanted;
+    });
   if (existing) {
     db.prepare('UPDATE event SET end_at=?, recurrence_rule=?, location=?, description=?, icon=?, color_override=? WHERE id=?').run(
       endAt, rule, location, description, icon, color, existing.id
@@ -413,6 +435,19 @@ const seedSoccer = db.transaction(() => {
         member,
       });
     }
+  }
+
+  for (const [date, start, end, venueKey] of PAUL_PRACTICES) {
+    const [venue, address] = VENUES[venueKey];
+    upsertEvent({
+      title: 'Soccer practice',
+      startAt: `${date}T${start}`,
+      endAt: `${date}T${end}`,
+      location: venue,
+      description: address,
+      icon: '⚽',
+      member: 'Paul',
+    });
   }
 
   const p = JOHN_PRACTICE;
