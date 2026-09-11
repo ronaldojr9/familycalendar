@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import { PALETTE, useApp } from '../store.jsx';
 import { WEEKDAYS, MONTHS, fmt, parse, today, addDays, startOfWeek, diffDays, monthGrid, fmtTime, fmtDateLong } from '../dates.js';
-import { Modal, Avatar, ColorPicker, Field } from './ui.jsx';
+import { Modal, Avatar, ColorPicker, Field, EventIcon } from './ui.jsx';
 
 const FAMILY_COLOR = '#64748B';
 
@@ -13,6 +13,8 @@ function eventColor(ev, memberById) {
 }
 
 // ---------- event form ----------
+
+const EVENT_ICONS = ['⚽', '🏈', '🏀', '⚾', '🎂', '🎉', '🎵', '🎭', '🏥', '✈️', '🎣', '📚', 'vikings'];
 
 function EventModal({ initial, onClose, onSaved }) {
   const { members } = useApp();
@@ -28,6 +30,7 @@ function EventModal({ initial, onClose, onSaved }) {
   const [recurrence, setRecurrence] = useState(initial.recurrence_rule || '');
   const [countdown, setCountdown] = useState(initial.countdown_enabled ?? false);
   const [colorOverride, setColorOverride] = useState(initial.color_override || null);
+  const [icon, setIcon] = useState(initial.icon || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,6 +53,7 @@ function EventModal({ initial, onClose, onSaved }) {
       member_ids: memberIds,
       color_override: colorOverride,
       countdown_enabled: countdown,
+      icon,
     };
     try {
       if (editing) await api.put(`/events/${initial.id}`, body);
@@ -121,6 +125,21 @@ function EventModal({ initial, onClose, onSaved }) {
           Show countdown badge
         </label>
       </div>
+      <Field label="Icon">
+        <div className="emoji-row">
+          {EVENT_ICONS.map((i) => (
+            <button
+              key={i}
+              type="button"
+              className={`emoji-dot ${icon === i ? 'selected' : ''}`}
+              onClick={() => setIcon(icon === i ? '' : i)}
+              aria-label={i === 'vikings' ? 'Vikings' : i}
+            >
+              {i === 'vikings' ? <EventIcon icon="vikings" size={22} /> : i}
+            </button>
+          ))}
+        </div>
+      </Field>
       <Field label="Location">
         <input value={locationText} onChange={(e) => setLocationText(e.target.value)} placeholder="Optional" />
       </Field>
@@ -163,6 +182,7 @@ function EventPill({ ev, onClick, compact }) {
       <span className="event-bar" style={{ background: stripe }} />
       <span className="event-text">
         {!ev.all_day && <span className="event-time">{fmtTime(ev.start_at, use24h)}</span>}
+        <EventIcon icon={ev.icon} size={15} />
         <span className="event-title">{ev.title}</span>
       </span>
     </button>
@@ -358,6 +378,7 @@ export default function Calendar() {
             <button key={ev.occurrence_id} className="day-event" onClick={() => setModal(ev)}>
               <span className="event-bar big" style={{ background: eventColor(ev, memberById) }} />
               <span className="day-event-body">
+                <EventIcon icon={ev.icon} size={18} />
                 <span className="day-event-title">{ev.title}</span>
                 <span className="day-event-meta">
                   {ev.all_day ? 'All day' : `${fmtTime(ev.start_at, use24h)} – ${fmtTime(ev.end_at, use24h)}`}

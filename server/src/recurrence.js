@@ -1,5 +1,6 @@
 // Lightweight recurrence expansion (RRULE-lite).
-// Events store recurrence_rule as '' | 'daily' | 'weekly' | 'monthly' | 'yearly'.
+// Events store recurrence_rule as '' | 'daily' | 'weekly' | 'monthly' | 'yearly',
+// optionally suffixed with '|until:YYYY-MM-DD' to end the series.
 // Dates are local wall-clock strings: 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm'.
 
 export function datePart(s) {
@@ -29,6 +30,19 @@ export function diffDays(a, b) {
   return Math.round((toUTC(b) - toUTC(a)) / 86400000);
 }
 
+// A recurrence may carry an end date: 'weekly|until:2026-10-28'. Seasons,
+// school terms and club sessions all stop; without this a weekly practice
+// repeats forever.
+export const UNTIL = '|until:';
+
+export function splitRule(raw) {
+  const full = raw || '';
+  const at = full.indexOf(UNTIL);
+  if (at === -1) return { rule: full, until: null };
+  const until = full.slice(at + UNTIL.length);
+  return { rule: full.slice(0, at), until: /^\d{4}-\d{2}-\d{2}$/.test(until) ? until : null };
+}
+
 // Expand one event into occurrences whose start date falls within [from, to].
 // Returns [{ occurs_on, start_at, end_at }] with times preserved.
 export function expandEvent(event, from, to) {
@@ -36,7 +50,10 @@ export function expandEvent(event, from, to) {
   const durationDays = Math.max(0, diffDays(startDate, datePart(event.end_at)));
   const startTime = timePart(event.start_at);
   const endTime = timePart(event.end_at);
-  const rule = event.recurrence_rule || '';
+  const { rule, until } = splitRule(event.recurrence_rule);
+  // Never look past the end of the series.
+  if (until && from > until) return [];
+  if (until && to > until) to = until;
 
   const make = (occDate) => ({
     occurs_on: occDate,

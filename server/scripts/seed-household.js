@@ -1,5 +1,5 @@
 // Seeds the Luckow household: family members, morning/night routines, the
-// weekly chore rotation, the dinner plan, and Paul's robotics club.
+// weekly chore rotation, the dinner plan, sports schedules and the Vikings.
 //
 //   npm run seed
 //
@@ -93,6 +93,68 @@ const RECIPES = [
 
 // Paul's robotics club: every Monday and Tuesday, 3:00–4:30pm.
 const ROBOTICS = { member: 'Paul', days: [1, 2], start: '15:00', end: '16:30', from: '2026-09-07' };
+
+// ---- Fall 2026 soccer -----------------------------------------------------
+// Games transcribed from the SportsEngine team schedules. Each row is
+// [date, start, end, matchup, venue, field].
+
+const VENUES = {
+  yankton: ['Yankton Trail Park', '3901 South Minnesota Avenue, Sioux Falls, SD, 57108, US'],
+  tomar: ['Tomar Park', '100 West Twin Oaks Road, Sioux Falls, SD, 57105, US'],
+};
+
+// John — U10 Boys Oaks.
+const JOHN_GAMES = [
+  ['2026-09-14', '17:45', '19:00', 'Oaks vs Inferno', 'yankton', '20S'],
+  ['2026-09-20', '13:00', '14:15', 'Oaks vs Chargers', 'tomar', '3'],
+  ['2026-09-26', '09:00', '10:15', 'Oaks vs Narwhals', 'tomar', '2'],
+  ['2026-10-03', '09:00', '10:15', 'Oaks vs Ocelots', 'yankton', '18S'],
+  ['2026-10-17', '09:00', '10:15', 'Oaks vs Lions', 'tomar', '2'],
+  ['2026-10-24', '10:15', '11:30', 'Oaks vs Spartans', 'tomar', '1'],
+];
+
+// Paul — U14 Boys SaberCats. Home team first, as the schedule lists it.
+const PAUL_GAMES = [
+  ['2026-09-14', '19:30', '21:15', 'SaberCats vs Raccoons', 'yankton', '12'],
+  ['2026-09-22', '19:30', '21:15', 'SaberCats vs Roadrunners', 'yankton', '12'],
+  ['2026-09-28', '19:30', '21:15', 'SaberCats vs Ironclads', 'yankton', '9N'],
+  ['2026-10-05', '19:30', '21:15', 'Bluebirds vs SaberCats', 'yankton', '9N'],
+  ['2026-10-12', '19:30', '21:15', 'SaberCats vs Tornadoes', 'yankton', '10S'],
+  ['2026-10-19', '19:30', '21:15', 'SaberCats vs Rebels', 'yankton', '12'],
+  ['2026-10-27', '19:30', '21:15', 'Bluejays vs SaberCats', 'yankton', '10N'],
+];
+
+// John's practice: every Wednesday, 6:00–7:30pm, through the end of the season.
+// Venue was not given — set it here (or in the app) once you know it.
+const JOHN_PRACTICE = { from: '2026-09-16', until: '2026-10-28', start: '18:00', end: '19:30', location: '' };
+
+// ---- Minnesota Vikings 2026 season ----------------------------------------
+// [date, kickoff, 'vs'|'at', opponent, venue, network]. Times are local
+// (the schedule's CDT/CST already matches America/Chicago wall-clock).
+// Games are assumed to run 3h15m.
+const VIKINGS_GAME_MINUTES = 195;
+const VIKINGS = [
+  ['2026-09-13', '15:25', 'vs', 'Packers', 'U.S. Bank Stadium', 'CBS'],
+  ['2026-09-20', '12:00', 'at', 'Bears', 'Soldier Field', 'FOX'],
+  ['2026-09-27', '15:05', 'at', 'Buccaneers', 'Raymond James Stadium', 'FOX'],
+  ['2026-10-04', '15:05', 'vs', 'Dolphins', 'U.S. Bank Stadium', 'FOX'],
+  ['2026-10-11', '12:00', 'at', 'Saints', 'Caesars Superdome', 'FOX'],
+  ['2026-10-25', '12:00', 'vs', 'Colts', 'U.S. Bank Stadium', 'CBS'],
+  ['2026-11-01', '12:00', 'at', 'Lions', 'Ford Field', 'FOX'],
+  ['2026-11-09', '19:15', 'vs', 'Bills', 'U.S. Bank Stadium', 'ESPN'],
+  ['2026-11-15', '12:00', 'at', 'Packers', 'Lambeau Field', 'FOX'],
+  ['2026-11-22', '19:20', 'vs', '49ers', 'Estadio Banorte', 'NBC'],
+  ['2026-11-29', '12:00', 'vs', 'Falcons', 'U.S. Bank Stadium', 'FOX'],
+  ['2026-12-06', '15:25', 'vs', 'Panthers', 'U.S. Bank Stadium', 'CBS'],
+  ['2026-12-10', '19:15', 'at', 'Patriots', 'Gillette Stadium', 'Prime'],
+  ['2026-12-20', '19:20', 'vs', 'Lions', 'U.S. Bank Stadium', 'NBC'],
+  ['2027-01-03', '12:00', 'at', 'Jets', 'MetLife Stadium', 'CBS'],
+];
+// Week 6 is the bye. No date is published for it; it is the open Sunday
+// between week 5 (Oct 11) and week 7 (Oct 25).
+const VIKINGS_BYE = '2026-10-18';
+// Weeks 16 (vs Commanders) and 18 (vs Bears) are still TBD — no date to add.
+const VIKINGS_PURPLE = '#4F2683';
 
 // ---------------------------------------------------------------------------
 
@@ -311,6 +373,88 @@ const seedEvents = db.transaction(() => {
   }
 });
 seedEvents();
+
+// --- soccer ----------------------------------------------------------------
+
+// Events are matched on (title, start_at) so a re-run updates rather than
+// duplicates; a rescheduled game gets added as a new one, and the old row is
+// left alone to be deleted in the app.
+function upsertEvent({ title, startAt, endAt, rule = '', location = '', description = '', member, icon = '', color = null, allDay = false }) {
+  const existing = db.prepare('SELECT * FROM event WHERE title = ? AND start_at = ?').get(title, startAt);
+  if (existing) {
+    db.prepare('UPDATE event SET end_at=?, recurrence_rule=?, location=?, description=?, icon=?, color_override=? WHERE id=?').run(
+      endAt, rule, location, description, icon, color, existing.id
+    );
+    return existing.id;
+  }
+  const id = db
+    .prepare(
+      `INSERT INTO event (household_id, title, description, location, start_at, end_at, all_day, recurrence_rule, icon, color_override)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(hid, title, description, location, startAt, endAt, allDay ? 1 : 0, rule, icon, color).lastInsertRowid;
+  // Household-wide events (the Vikings schedule) belong to nobody in particular.
+  if (member) db.prepare('INSERT OR IGNORE INTO event_member (event_id, member_id) VALUES (?, ?)').run(id, memberIds[member]);
+  counts.events++;
+  return id;
+}
+
+const seedSoccer = db.transaction(() => {
+  for (const [member, games] of [['John', JOHN_GAMES], ['Paul', PAUL_GAMES]]) {
+    for (const [date, start, end, matchup, venueKey, field] of games) {
+      const [venue, address] = VENUES[venueKey];
+      upsertEvent({
+        title: matchup,
+        icon: '⚽',
+        startAt: `${date}T${start}`,
+        endAt: `${date}T${end}`,
+        location: `${venue} — Field ${field}`,
+        description: address,
+        member,
+      });
+    }
+  }
+
+  const p = JOHN_PRACTICE;
+  upsertEvent({
+    title: 'Soccer practice',
+    icon: '⚽',
+    startAt: `${p.from}T${p.start}`,
+    endAt: `${p.from}T${p.end}`,
+    rule: `weekly|until:${p.until}`,
+    location: p.location,
+    member: 'John',
+  });
+});
+seedSoccer();
+
+// --- Vikings ---------------------------------------------------------------
+
+const seedVikings = db.transaction(() => {
+  for (const [date, kick, homeAway, opponent, venue, network] of VIKINGS) {
+    const [h, m] = kick.split(':').map(Number);
+    const endMins = h * 60 + m + VIKINGS_GAME_MINUTES;
+    const end = `${String(Math.floor(endMins / 60) % 24).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
+    upsertEvent({
+      title: `Vikings ${homeAway} ${opponent}`,
+      startAt: `${date}T${kick}`,
+      endAt: `${date}T${end}`,
+      location: venue,
+      description: `${network} · KFAN`,
+      icon: 'vikings',
+      color: VIKINGS_PURPLE,
+    });
+  }
+  upsertEvent({
+    title: 'Vikings bye week',
+    startAt: VIKINGS_BYE,
+    endAt: VIKINGS_BYE,
+    allDay: true,
+    icon: 'vikings',
+    color: VIKINGS_PURPLE,
+  });
+});
+seedVikings();
 
 // ---------------------------------------------------------------------------
 

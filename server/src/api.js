@@ -154,7 +154,7 @@ api.get('/events/countdowns', (req, res) => {
 
 function saveEventBody(req, res, existingId) {
   const h = getHousehold();
-  const { title, description, location, start_at, end_at, all_day, recurrence_rule, member_ids, color_override, countdown_enabled } =
+  const { title, description, location, start_at, end_at, all_day, recurrence_rule, member_ids, color_override, countdown_enabled, icon } =
     req.body || {};
   if (!title || !start_at || !end_at) return null;
   const tx = db.transaction(() => {
@@ -162,16 +162,16 @@ function saveEventBody(req, res, existingId) {
     if (id) {
       db.prepare(
         `UPDATE event SET title=?, description=?, location=?, start_at=?, end_at=?, all_day=?,
-         recurrence_rule=?, color_override=?, countdown_enabled=? WHERE id=?`
-      ).run(title, description || '', location || '', start_at, end_at, bool(all_day), recurrence_rule || '', color_override || null, bool(countdown_enabled), id);
+         recurrence_rule=?, color_override=?, countdown_enabled=?, icon=? WHERE id=?`
+      ).run(title, description || '', location || '', start_at, end_at, bool(all_day), recurrence_rule || '', color_override || null, bool(countdown_enabled), icon || '', id);
       db.prepare('DELETE FROM event_member WHERE event_id = ?').run(id);
     } else {
       const info = db
         .prepare(
-          `INSERT INTO event (household_id, title, description, location, start_at, end_at, all_day, recurrence_rule, color_override, countdown_enabled)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO event (household_id, title, description, location, start_at, end_at, all_day, recurrence_rule, color_override, countdown_enabled, icon)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(h.id, title, description || '', location || '', start_at, end_at, bool(all_day), recurrence_rule || '', color_override || null, bool(countdown_enabled));
+        .run(h.id, title, description || '', location || '', start_at, end_at, bool(all_day), recurrence_rule || '', color_override || null, bool(countdown_enabled), icon || '');
       id = info.lastInsertRowid;
     }
     const link = db.prepare('INSERT OR IGNORE INTO event_member (event_id, member_id) VALUES (?, ?)');

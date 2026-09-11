@@ -138,6 +138,18 @@ CREATE INDEX IF NOT EXISTS idx_completion_date ON chore_completion (date);
 CREATE INDEX IF NOT EXISTS idx_ledger_member ON star_ledger (member_id);
 `);
 
+// Lightweight migrations: CREATE TABLE IF NOT EXISTS never alters an existing
+// table, so new columns have to be added explicitly for databases already in use.
+function addColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+// Events can carry an emoji, or a named mark the client draws (e.g. 'vikings').
+addColumn('event', 'icon', "TEXT NOT NULL DEFAULT ''");
+
 export function getHousehold() {
   return db.prepare('SELECT * FROM household LIMIT 1').get() || null;
 }

@@ -429,3 +429,8 @@ h1, h2, h3 { margin: 0 0 10px; }
   .week-col { min-height: unset; }
   .chore-columns { grid-template-columns: 1fr; }
 }
+
+/* Event marks: emoji or a drawn badge (e.g. the Vikings helmet). */
+.event-mark { display: inline-flex; align-items: center; flex: none; margin-right: 4px; line-height: 1; vertical-align: -2px; }
+.event-mark svg { display: block; }
+.event-mark.emoji { font-size: 0.95em; }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { choreDueOn } from '../src/recurrence.js';
+import { choreDueOn, expandEvent, splitRule } from '../src/recurrence.js';
 import { holidayChecker, holidaysForYear } from '../src/holidays.js';
 
 const holidays = holidayChecker('');
@@ -100,4 +100,40 @@ test('unchanged rules still behave', () => {
   assert.equal(choreDueOn({ recurrence_rule: 'once', due_date: '2026-09-08' }, '2026-09-08', holidays), true);
   assert.equal(choreDueOn({ recurrence_rule: 'once', due_date: '2026-09-08' }, '2026-09-09', holidays), false);
   assert.equal(choreDueOn({}, '2026-09-08', holidays), true); // default is daily
+});
+
+// --- event recurrence end dates ---------------------------------------------
+
+test('a weekly series stops at its until date', () => {
+  const practice = {
+    start_at: '2026-09-16T18:00',
+    end_at: '2026-09-16T19:30',
+    recurrence_rule: 'weekly|until:2026-10-28',
+  };
+  const occ = expandEvent(practice, '2026-09-01', '2027-06-30').map((o) => o.occurs_on);
+  assert.deepEqual(occ, [
+    '2026-09-16', '2026-09-23', '2026-09-30', '2026-10-07',
+    '2026-10-14', '2026-10-21', '2026-10-28',
+  ]);
+  // Nothing next spring.
+  assert.equal(expandEvent(practice, '2027-04-01', '2027-04-30').length, 0);
+  // Times are preserved.
+  assert.equal(expandEvent(practice, '2026-09-23', '2026-09-23')[0].start_at, '2026-09-23T18:00');
+});
+
+test('an unbounded weekly series still repeats', () => {
+  const standing = { start_at: '2026-09-16T18:00', end_at: '2026-09-16T19:30', recurrence_rule: 'weekly' };
+  assert.equal(expandEvent(standing, '2027-04-01', '2027-04-30').length > 0, true);
+});
+
+test('splitRule leaves plain rules alone and ignores a malformed until', () => {
+  assert.deepEqual(splitRule('weekly'), { rule: 'weekly', until: null });
+  assert.deepEqual(splitRule(''), { rule: '', until: null });
+  assert.deepEqual(splitRule('weekly|until:nonsense'), { rule: 'weekly', until: null });
+  assert.deepEqual(splitRule('daily|until:2026-10-28'), { rule: 'daily', until: '2026-10-28' });
+});
+
+test('a one-off event with an until is unaffected', () => {
+  const game = { start_at: '2026-09-13T15:25', end_at: '2026-09-13T18:40', recurrence_rule: '' };
+  assert.equal(expandEvent(game, '2026-09-01', '2026-09-30').length, 1);
 });

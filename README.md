@@ -51,6 +51,18 @@ message. To skip the wizard, pass a PIN and the script will create the
 household itself: `HUB_PIN=1234 npm run seed` (PowerShell:
 `$env:HUB_PIN="1234"; npm run seed`).
 
+### Event repeat rules
+
+Event recurrence (`'' | daily | weekly | monthly | yearly`) can carry an end
+date: `weekly|until:2026-10-28`. Seasons and school terms stop, and without it a
+weekly practice repeats forever. The event editor exposes it as an end date on
+any repeating event.
+
+Events also have an **icon** — an emoji, or a named mark the app draws itself
+(currently `vikings`, a simple fan-style helmet in `client/src/components/ui.jsx`;
+it is a hand-drawn approximation, not the official logo). Add more in
+`NAMED_MARKS` and list them in `EVENT_ICONS` to have them appear in the picker.
+
 ### When something looks wrong
 
 ```bash
