@@ -55,3 +55,12 @@ export function fmtDateLong(s) {
   const d = parse(s);
   return `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
 }
+
+// Which chore bucket the household is in right now. The wall display should
+// lead with what is happening, not make anyone scroll for it.
+export function currentBucket(d = new Date()) {
+  const h = d.getHours();
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  return 'evening';
+}

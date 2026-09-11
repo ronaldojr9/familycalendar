@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useApp } from './store.jsx';
 import SetupWizard from './components/SetupWizard.jsx';
 import PinModal from './components/PinModal.jsx';
+import Today from './components/Today.jsx';
 import Calendar from './components/Calendar.jsx';
 import Chores from './components/Chores.jsx';
 import Lists from './components/Lists.jsx';
@@ -11,6 +12,7 @@ import Settings from './components/Settings.jsx';
 import { weatherIcon } from './components/ui.jsx';
 
 const TABS = [
+  { id: 'today', label: 'Today', icon: '🏡' },
   { id: 'calendar', label: 'Calendar', icon: '📅' },
   { id: 'chores', label: 'Chores', icon: '✅' },
   { id: 'lists', label: 'Lists', icon: '📝' },
@@ -31,10 +33,10 @@ function Clock({ use24h }) {
 
 export default function App() {
   const { household, weather, connected, use24h } = useApp();
-  const [tab, setTab] = useState(() => location.hash.slice(1) || 'calendar');
+  const [tab, setTab] = useState(() => location.hash.slice(1) || 'today');
 
   useEffect(() => {
-    const onHash = () => setTab(location.hash.slice(1) || 'calendar');
+    const onHash = () => setTab(location.hash.slice(1) || 'today');
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -81,6 +83,7 @@ export default function App() {
       {!connected && <div className="reconnect-banner">Reconnecting to the hub…</div>}
 
       <main className="main">
+        {tab === 'today' && <Today />}
         {tab === 'calendar' && <Calendar />}
         {tab === 'chores' && <Chores />}
         {tab === 'lists' && <Lists />}

@@ -4,8 +4,10 @@ A self-hosted, LAN-only family calendar & household hub — a Skylight-Calendar-
 
 **Features**
 
+- 🏡 Today view — the landing screen and the wall display: what's on the calendar, the weather, tonight's dinner and who cooks, and the chores for the part of the day it currently is. A **Rotate** button cycles those panels full-screen at larger type for across-the-room reading, skipping any panel with nothing in it.
+
 - 📅 Shared family calendar — Day / Week / Month views, color-coded per family member, recurring events (daily/weekly/monthly/yearly), multi-member events with striped indicators, per-member filtering, countdown badges for birthdays & trips
-- ✅ Chore & routine tracker — per-member daily boards with big kid-friendly tap targets, daily / specific-weekday / one-time chores, morning/afternoon/evening buckets, streaks, and a parent overview grid
+- ✅ Chore & routine tracker — per-member daily boards that collapse by time of day (whatever part of the day it is now starts open, the rest stay folded, and every column folds together so the people stay side by side), big kid-friendly tap targets, daily / specific-weekday / one-time chores, morning/afternoon/evening buckets, streaks, and a parent overview grid
 - ⭐ Rewards — chores earn stars, parents define a reward catalog, redemptions are PIN-confirmed, full star ledger for auditability
 - 📝 Custom lists — groceries (created by default), to-dos, or anything; type-and-enter adding, tap to check off, checked items sink to the bottom
 - 🍽️ Meal planning — weekly breakfast/lunch/dinner/snack grid plus a simple recipe box

@@ -232,13 +232,25 @@ h1, h2, h3 { margin: 0 0 10px; }
 
 /* ---------- chores ---------- */
 
-.chore-columns { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.chore-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
 .chore-col { border-top: 5px solid var(--border); }
 .chore-col-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .chore-col-head h2 { margin: 0; font-size: 18px; }
 .chore-col-head .star-badge { margin-left: auto; }
 .star-badge { background: #fdf3d7; border: 1px solid #f0dfa8; color: #7a5c00; border-radius: 999px; padding: 4px 12px; font-weight: 700; white-space: nowrap; }
-.bucket-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-weight: 700; margin: 10px 0 4px; }
+/* Collapsible time-of-day header. A real button: full width, 44px tall. */
+.bucket-label {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-dim); font-weight: 700; margin: 10px 0 4px;
+  min-height: 44px; padding: 0 4px; background: none; border: 0;
+  border-radius: 10px; cursor: pointer; text-align: left;
+}
+.bucket-label:hover { background: var(--surface-2); }
+.bucket-caret { display: inline-block; transition: transform 0.15s ease; font-size: 11px; }
+.bucket-caret.open { transform: rotate(90deg); }
+.bucket-count { margin-left: auto; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.chore-bucket.closed + .chore-bucket .bucket-label { margin-top: 0; }
 
 .chore-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
 .chore-row.pop .chore-check { animation: pop 0.5s ease; }
@@ -434,3 +446,93 @@ h1, h2, h3 { margin: 0 0 10px; }
 .event-mark { display: inline-flex; align-items: center; flex: none; margin-right: 4px; line-height: 1; vertical-align: -2px; }
 .event-mark svg { display: block; }
 .event-mark.emoji { font-size: 0.95em; }
+
+/* ---------- Today ---------- */
+
+.today-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+.today-card { padding: 16px; min-width: 0; }
+.today-span2 { grid-column: span 2; }
+.today-full { grid-column: 1 / -1; }
+.today-card-title {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-dim); font-weight: 700; margin: 0 0 10px;
+}
+
+/* weather */
+.today-weather-now { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.today-weather-icon { font-size: 34px; line-height: 1; }
+.today-weather-temp { font-size: 40px; font-weight: 800; line-height: 1; }
+.today-weather-days { display: flex; gap: 12px; flex-wrap: wrap; }
+.today-weather-day { display: flex; flex-direction: column; gap: 2px; min-width: 54px; }
+.today-weather-day-icon { font-size: 20px; }
+
+/* schedule */
+.today-schedule { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.today-schedule-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.today-schedule-row:last-child { border-bottom: 0; }
+.today-time { min-width: 68px; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
+.today-bar { width: 4px; align-self: stretch; border-radius: 2px; flex: none; }
+.today-schedule-body { display: flex; flex-direction: column; min-width: 0; }
+.today-schedule-title { display: flex; align-items: center; font-weight: 600; }
+
+/* dinner */
+.today-dinner { display: flex; flex-direction: column; gap: 10px; }
+.today-dinner-name { font-size: 24px; font-weight: 700; line-height: 1.2; }
+.today-dinner-cook { display: flex; flex-wrap: wrap; gap: 10px; }
+.today-cook { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-dim); }
+
+/* chores summary */
+.today-chores { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.today-chore-col { border-top: 4px solid var(--border); border-radius: 10px; background: var(--surface-2); padding: 10px 12px; }
+.today-chore-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.today-chore-head .muted { margin-left: auto; font-variant-numeric: tabular-nums; }
+.today-chore-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.today-chore-list li { display: flex; align-items: baseline; gap: 7px; font-size: 15px; }
+.today-chore-list li.done { color: var(--text-dim); text-decoration: line-through; }
+.today-chore-tick { color: var(--good); font-weight: 700; flex: none; }
+
+/* rotation */
+.today-rotator { display: flex; flex-direction: column; gap: 14px; }
+.today-featured { min-height: min(62vh, 520px); }
+.today-featured .today-card-title { font-size: 14px; }
+.today-dots { display: flex; gap: 10px; justify-content: center; }
+.today-dot { width: 12px; height: 12px; border-radius: 50%; border: 0; background: var(--border); padding: 0; cursor: pointer; }
+.today-dot.on { background: var(--accent); }
+
+@media (max-width: 1000px) {
+  .today-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .today-span2 { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .today-grid { grid-template-columns: 1fr; }
+  .today-span2, .today-full { grid-column: 1 / -1; }
+  .today-weather-temp { font-size: 34px; }
+}
+
+/* Rotation is the across-the-room mode, so the featured panel reads bigger. */
+.today-featured .today-card-title { font-size: 14px; margin-bottom: 16px; }
+.today-featured .today-schedule-row { padding: 12px 0; }
+.today-featured .today-time { min-width: 104px; font-size: 22px; }
+.today-featured .today-schedule-title { font-size: 22px; }
+.today-featured .today-schedule-body .small { font-size: 15px; }
+.today-featured .today-dinner-name { font-size: 46px; }
+.today-featured .today-cook { font-size: 20px; }
+.today-featured .today-weather-icon { font-size: 60px; }
+.today-featured .today-weather-temp { font-size: 76px; }
+.today-featured .today-weather-day { min-width: 92px; font-size: 20px; }
+.today-featured .today-weather-day-icon { font-size: 30px; }
+.today-featured .today-chore-list li { font-size: 20px; gap: 9px; }
+.today-featured .today-chore-head strong { font-size: 20px; }
+
+@media (max-width: 640px) {
+  .today-featured .today-weather-temp { font-size: 52px; }
+  .today-featured .today-dinner-name { font-size: 32px; }
+  .today-featured .today-time { min-width: 74px; font-size: 17px; }
+  .today-featured .today-schedule-title { font-size: 17px; }
+  .today-featured .today-chore-list li { font-size: 16px; }
+}

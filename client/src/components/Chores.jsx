@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import { useApp } from '../store.jsx';
-import { today, addDays, parse, fmtDateLong } from '../dates.js';
+import { today, addDays, parse, fmtDateLong, currentBucket } from '../dates.js';
 import { Modal, Field, Avatar } from './ui.jsx';
 
 const TIME_LABELS = { morning: '🌅 Morning', afternoon: '☀️ Afternoon', evening: '🌙 Evening', any: 'Anytime' };
@@ -225,6 +225,17 @@ export default function Chores() {
 
   const groups = ['morning', 'afternoon', 'evening', 'any'];
 
+  // Buckets collapse as a unit across every column, so the people stay
+  // side by side instead of each list sliding out of step. Whatever part of
+  // the day it is now starts open; the rest start collapsed.
+  const [open, setOpen] = useState(() => {
+    const now = currentBucket();
+    return Object.fromEntries(groups.map((g) => [g, g === now || g === 'any']));
+  });
+  const toggleBucket = (g) => setOpen((o) => ({ ...o, [g]: !o[g] }));
+  const allOpen = groups.every((g) => open[g]);
+  const setAll = (v) => setOpen(Object.fromEntries(groups.map((g) => [g, v])));
+
   return (
     <div className="chores">
       <div className="cal-toolbar">
@@ -239,6 +250,9 @@ export default function Chores() {
             <button className={!overview ? 'active' : ''} onClick={() => setOverview(false)}>By person</button>
             <button className={overview ? 'active' : ''} onClick={() => setOverview(true)}>Overview</button>
           </div>
+          <button className="btn" onClick={() => setAll(!allOpen)}>
+            {allOpen ? 'Collapse all' : 'Expand all'}
+          </button>
           <button className="btn primary" onClick={() => setEditor({})}>+ Chore</button>
         </div>
       </div>
@@ -264,10 +278,17 @@ export default function Chores() {
                 {groups.map((g) => {
                   const bucket = mine.filter((c) => c.time_of_day === g);
                   if (!bucket.length) return null;
+                  const bDone = bucket.filter((c) => c.completed).length;
                   return (
-                    <div key={g}>
-                      <div className="bucket-label">{TIME_LABELS[g]}</div>
-                      {bucket.map((c) => (
+                    <div key={g} className={`chore-bucket ${open[g] ? 'open' : 'closed'}`}>
+                      <button className="bucket-label" onClick={() => toggleBucket(g)} aria-expanded={open[g]}>
+                        <span className={`bucket-caret ${open[g] ? 'open' : ''}`} aria-hidden="true">▸</span>
+                        {TIME_LABELS[g]}
+                        <span className="bucket-count">
+                          {bDone}/{bucket.length}
+                        </span>
+                      </button>
+                      {open[g] && bucket.map((c) => (
                         <div key={c.id} className={`chore-row ${c.completed ? 'done' : ''} ${justDone === c.id ? 'pop' : ''}`}>
                           <button className="chore-check" onClick={() => toggle(c)} aria-label={c.completed ? 'Undo' : 'Complete'}>
                             {c.completed ? '✔' : ''}
