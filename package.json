@@ -12,7 +12,8 @@
     "build": "npm run build -w client",
     "start": "npm run start -w server",
     "seed": "node server/scripts/seed-household.js",
-    "test": "node --test server/test/*.test.js"
+    "test": "node --test server/test/*.test.js",
+    "doctor": "node server/scripts/doctor.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

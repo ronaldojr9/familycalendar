@@ -45,9 +45,21 @@ updated in place rather than duplicated, nothing is ever deleted, and a dinner
 you planned by hand is never overwritten. Re-run it to extend the dinner plan
 further out. Refresh the app afterwards to pick up the changes.
 
-If you have not finished the setup wizard yet, pass a PIN and the script will
-create the household too: `HUB_PIN=1234 npm run seed` (PowerShell:
+**The seed needs a household to attach things to.** Finish the setup wizard in
+the app first, then seed — running it beforehand does nothing but print a
+message. To skip the wizard, pass a PIN and the script will create the
+household itself: `HUB_PIN=1234 npm run seed` (PowerShell:
 `$env:HUB_PIN="1234"; npm run seed`).
+
+### When something looks wrong
+
+```bash
+npm run doctor
+```
+
+Prints what is checked out, which database file the app is really using, what
+is in it, what today's board works out to, and what to do next. It is the first
+thing to run when the app looks emptier than it should.
 
 ### Chore repeat rules
 

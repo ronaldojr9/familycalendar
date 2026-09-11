@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { db, getHousehold } from './db.js';
 import { api } from './api.js';
 import { attachWebSocket } from './ws.js';
 
@@ -46,5 +47,15 @@ server.listen(PORT, '0.0.0.0', () => {
       }
     }
   }
+  // A household with no chores almost always means `npm run seed` was run
+  // before the setup wizard (it needs a household to attach things to) or was
+  // never run at all. Say so here rather than leaving an empty-looking app.
+  try {
+    if (getHousehold() && db.prepare('SELECT COUNT(*) AS c FROM chore').get().c === 0) {
+      console.log('  Note: this household has no chores yet. Run "npm run seed" to load them,');
+      console.log('        or "npm run doctor" if something looks wrong.');
+      console.log('');
+    }
+  } catch {}
   console.log('');
 });
