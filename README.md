@@ -28,10 +28,60 @@ The server prints the LAN URL to open on other devices, e.g. `http://192.168.1.2
 - **Port**: set `PORT=9000 npm start` to change it.
 - **Data**: everything lives in a single SQLite file at `server/data/familyhub.db` — back that file up and you've backed up the household. Set `FAMILY_HUB_DATA=/some/dir` to relocate it.
 
+### Seeding a household
+
+`npm run seed` fills in a household's people, routines, chore rotation, dinner
+plan and recurring events in one shot, so nobody has to tap in fifty chores by
+hand. Edit the CONFIG block at the top of `server/scripts/seed-household.js`
+(rotation start date, who takes the bins out, the dinner menu, how many weeks of
+dinners to write) and run it:
+
+```bash
+npm run seed
+```
+
+It is safe to re-run: chores are matched on person + title + time of day and
+updated in place rather than duplicated, nothing is ever deleted, and a dinner
+you planned by hand is never overwritten. Re-run it to extend the dinner plan
+further out. Refresh the app afterwards to pick up the changes.
+
+If you have not finished the setup wizard yet, pass a PIN and the script will
+create the household too: `HUB_PIN=1234 npm run seed` (PowerShell:
+`$env:HUB_PIN="1234"; npm run seed`).
+
+### Chore repeat rules
+
+Beyond "every day" and "certain days", chores support two rules that household
+schedules actually need:
+
+| Rule | Means |
+| --- | --- |
+| `daily` | every day |
+| `once` + `due_date` | a one-off |
+| `days:0,2,4` | those weekdays (0 = Sunday) |
+| `weeks:2:2026-09-05:0,1,2,3,4,5,6` | every other week, weeks running from the anchor date — a Saturday here, so weeks run Sat→Fri |
+| …any rule + `\|holiday-shift` | slides one day later when the day before was a holiday |
+
+`weeks:` is how a rotation is expressed: give one child the chore anchored to
+their week and the other the same chore anchored a week later, and exactly one
+of them has it on any given day — in both directions, so last week's board
+still shows whoever really had it. The phase is locked to the anchor date, so
+it never drifts.
+
+`|holiday-shift` is trash day: out Tuesday night, except when Monday was a
+holiday and the truck runs a day late. US federal holidays are computed in
+`server/src/holidays.js` (including observed dates when one falls on a weekend).
+Add local no-collection days — city holidays, snow days — in the `extra_holidays`
+setting as a comma-separated list of `YYYY-MM-DD`.
+
+Both are editable in the app: the chore editor has an **Every other week** mode
+with a start-of-week date, and a holiday checkbox.
+
 ### Development
 
 ```bash
 npm run dev   # server on :8080 with reload + Vite dev server on :5173 (proxies /api and /ws)
+npm test      # chore recurrence, rotation and holiday rules
 ```
 
 ### iPad kiosk mode

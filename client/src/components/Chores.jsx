@@ -1,11 +1,43 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import { useApp } from '../store.jsx';
-import { today, addDays, fmtDateLong } from '../dates.js';
+import { today, addDays, parse, fmtDateLong } from '../dates.js';
 import { Modal, Field, Avatar } from './ui.jsx';
 
 const TIME_LABELS = { morning: '🌅 Morning', afternoon: '☀️ Afternoon', evening: '🌙 Evening', any: 'Anytime' };
 const CHORE_ICONS = ['🛏️','🦷','🐕','🍽️','🧺','🗑️','📚','🧹','🌱','🎒','🧸','🚿'];
+const HOLIDAY_SHIFT = '|holiday-shift';
+const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+// recurrence_rule is 'daily' | 'once' | 'days:0,2' | 'weeks:N:ANCHOR:days',
+// optionally suffixed with '|holiday-shift'. Parsing it back out keeps an
+// alternating chore alternating when a parent opens it just to rename it.
+function parseRule(raw) {
+  const rule = raw || 'daily';
+  const holidayShift = rule.endsWith(HOLIDAY_SHIFT);
+  const base = holidayShift ? rule.slice(0, -HOLIDAY_SHIFT.length) : rule;
+  if (base.startsWith('weeks:')) {
+    const [, every, anchor, days = ''] = base.split(':');
+    return {
+      mode: 'weeks',
+      every: Number(every) || 2,
+      anchor,
+      days: days.split(',').filter(Boolean).map(Number),
+      holidayShift,
+    };
+  }
+  if (base.startsWith('days:')) {
+    return { mode: 'days', every: 2, anchor: '', days: base.slice(5).split(',').filter(Boolean).map(Number), holidayShift };
+  }
+  return { mode: base === 'once' ? 'once' : 'daily', every: 2, anchor: '', days: [], holidayShift };
+}
+
+// Most recent Saturday on or before today — the natural start for a weekly
+// rotation that changes hands on the weekend.
+function lastSaturday() {
+  const d = parse(today());
+  return addDays(today(), -((d.getDay() + 1) % 7));
+}
 
 function ChoreEditor({ initial, onClose, onSaved }) {
   const { members, withPin } = useApp();
@@ -13,27 +45,34 @@ function ChoreEditor({ initial, onClose, onSaved }) {
   const [title, setTitle] = useState(initial.title || '');
   const [memberId, setMemberId] = useState(initial.member_id || members[0]?.id);
   const [icon, setIcon] = useState(initial.icon || '');
-  const [mode, setMode] = useState(
-    initial.recurrence_rule?.startsWith('days:') ? 'days' : initial.recurrence_rule === 'once' ? 'once' : 'daily'
-  );
-  const [days, setDays] = useState(
-    initial.recurrence_rule?.startsWith('days:')
-      ? initial.recurrence_rule.slice(5).split(',').filter(Boolean).map(Number)
-      : []
-  );
+  const parsed = useMemo(() => parseRule(initial.recurrence_rule), [initial.recurrence_rule]);
+  const [mode, setMode] = useState(parsed.mode);
+  const [days, setDays] = useState(parsed.days);
+  const [every] = useState(parsed.every);
+  const [anchor, setAnchor] = useState(parsed.anchor || lastSaturday());
+  const [holidayShift, setHolidayShift] = useState(parsed.holidayShift);
   const [dueDate, setDueDate] = useState(initial.due_date || today());
   const [timeOfDay, setTimeOfDay] = useState(initial.time_of_day || 'any');
   const [stars, setStars] = useState(initial.star_value ?? 1);
   const [error, setError] = useState('');
 
+  const sortedDays = () => [...days].sort((a, b) => a - b).join(',');
+
+  const buildRule = () => {
+    if (mode === 'daily') return 'daily';
+    if (mode === 'once') return 'once';
+    const base = mode === 'weeks' ? `weeks:${every}:${anchor}:${sortedDays()}` : `days:${sortedDays()}`;
+    return holidayShift ? base + HOLIDAY_SHIFT : base;
+  };
+
   const save = async () => {
     if (!title.trim()) return setError('Give the chore a name');
-    if (mode === 'days' && days.length === 0) return setError('Pick at least one weekday');
+    if ((mode === 'days' || mode === 'weeks') && days.length === 0) return setError('Pick at least one weekday');
     const body = {
       title: title.trim(),
       member_id: memberId,
       icon,
-      recurrence_rule: mode === 'daily' ? 'daily' : mode === 'once' ? 'once' : `days:${[...days].sort().join(',')}`,
+      recurrence_rule: buildRule(),
       due_date: mode === 'once' ? dueDate : null,
       time_of_day: timeOfDay,
       star_value: Number(stars) || 0,
@@ -75,23 +114,41 @@ function ChoreEditor({ initial, onClose, onSaved }) {
       </Field>
       <Field label="Repeats">
         <div className="segmented">
-          {[['daily', 'Every day'], ['days', 'Certain days'], ['once', 'One time']].map(([v, l]) => (
+          {[['daily', 'Every day'], ['days', 'Certain days'], ['weeks', 'Every other week'], ['once', 'One time']].map(([v, l]) => (
             <button key={v} className={mode === v ? 'active' : ''} onClick={() => setMode(v)}>{l}</button>
           ))}
         </div>
       </Field>
-      {mode === 'days' && (
-        <div className="weekday-row">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((l, i) => (
-            <button
-              key={i}
-              className={`weekday-dot ${days.includes(i) ? 'on' : ''}`}
-              onClick={() => setDays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]))}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+      {(mode === 'days' || mode === 'weeks') && (
+        <>
+          <div className="weekday-row">
+            {WEEKDAY_INITIALS.map((l, i) => (
+              <button
+                key={i}
+                className={`weekday-dot ${days.includes(i) ? 'on' : ''}`}
+                onClick={() => setDays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]))}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          {mode === 'weeks' && (
+            <Field label="Starting the week of">
+              <input type="date" value={anchor} onChange={(e) => setAnchor(e.target.value)} />
+              <p className="muted small">
+                Repeats every {every === 2 ? 'other' : `${every}th`} week from this date, so the week runs from this
+                day. Give the other person the same chore starting a week later and they will alternate.
+              </p>
+            </Field>
+          )}
+          <label className="row gap check-row">
+            <input type="checkbox" checked={holidayShift} onChange={(e) => setHolidayShift(e.target.checked)} />
+            <span>Move to the next day if the day before was a holiday <span className="muted">(trash day)</span></span>
+          </label>
+          {mode === 'weeks' && days.length === 7 && (
+            <p className="muted small">Every day of that week.</p>
+          )}
+        </>
       )}
       {mode === 'once' && (
         <Field label="Due date">

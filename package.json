@@ -10,7 +10,9 @@
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client",
-    "start": "npm run start -w server"
+    "start": "npm run start -w server",
+    "seed": "node server/scripts/seed-household.js",
+    "test": "node --test server/test/*.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

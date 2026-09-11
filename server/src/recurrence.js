@@ -96,14 +96,58 @@ export function expandEvent(event, from, to) {
   return out;
 }
 
-// Chores: recurrence_rule is 'daily' | 'once' | 'days:0,2,4' (JS weekday numbers, 0=Sun).
-export function choreDueOn(chore, dateStr) {
-  const rule = chore.recurrence_rule || 'daily';
+// Chores: recurrence_rule is one of
+//   'daily'
+//   'once'                        (paired with chore.due_date)
+//   'days:0,2,4'                  JS weekday numbers, 0=Sun
+//   'weeks:N:ANCHOR:days'         every Nth week, phase-locked to the week
+//                                 containing ANCHOR (YYYY-MM-DD), on those
+//                                 weekdays — e.g. 'weeks:2:2026-09-05:0,1,2,3,4,5,6'
+//                                 is every other week, weeks running Sat->Fri
+//                                 because the anchor is a Saturday.
+// Any rule may carry the suffix '|holiday-shift', which slides the chore one
+// day later when the day before it was a holiday (how trash collection works).
+export const HOLIDAY_SHIFT = '|holiday-shift';
+
+export function weekdayOf(dateStr) {
+  return toUTC(dateStr).getUTCDay();
+}
+
+function baseDueOn(rule, chore, dateStr) {
   if (rule === 'daily') return true;
   if (rule === 'once') return chore.due_date === dateStr;
   if (rule.startsWith('days:')) {
     const days = rule.slice(5).split(',').filter(Boolean).map(Number);
-    return days.includes(toUTC(dateStr).getUTCDay());
+    return days.includes(weekdayOf(dateStr));
+  }
+  if (rule.startsWith('weeks:')) {
+    const [, everyRaw, anchor, daysRaw = ''] = rule.split(':');
+    const every = Number(everyRaw);
+    if (!Number.isInteger(every) || every < 1) return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(anchor || '')) return false;
+    const days = daysRaw.split(',').filter(Boolean).map(Number);
+    if (!days.includes(weekdayOf(dateStr))) return false;
+    // Weeks are counted from the anchor, so the phase holds in both directions
+    // and last week's board shows whoever really had the chore last week.
+    const weekIndex = Math.floor(diffDays(anchor, dateStr) / 7);
+    return ((weekIndex % every) + every) % every === 0;
   }
   return false;
+}
+
+export function choreDueOn(chore, dateStr, holidays) {
+  const raw = chore.recurrence_rule || 'daily';
+  const shifted = raw.endsWith(HOLIDAY_SHIFT);
+  const rule = shifted ? raw.slice(0, -HOLIDAY_SHIFT.length) : raw;
+  if (!shifted) return baseDueOn(rule, chore, dateStr);
+
+  const prev = addDaysStr(dateStr, -1);
+  const isHol = (d) => !!holidays && holidays.has(d);
+  // Due today if today is the normal day and yesterday was not a holiday, or if
+  // yesterday was the normal day but got bumped by a holiday the day before it.
+  // A single shift only — two holidays back to back still move the chore one day.
+  return (
+    (baseDueOn(rule, chore, dateStr) && !isHol(prev)) ||
+    (baseDueOn(rule, chore, prev) && isHol(addDaysStr(dateStr, -2)))
+  );
 }
