@@ -58,6 +58,8 @@ function MemberEditor({ initial, onClose }) {
 
 export default function Settings() {
   const { household, members, settings, withPin, use24h } = useApp();
+  const [nltKey, setNltKey] = useState(settings.nlt_api_key || '');
+  const [nltSaved, setNltSaved] = useState('');
   const [memberEditor, setMemberEditor] = useState(null);
   const [name, setName] = useState(household.name);
   const [locQuery, setLocQuery] = useState('');
@@ -165,6 +167,45 @@ export default function Settings() {
           ))}
         </div>
         {currentLoc && <button className="btn small" onClick={() => saveHousehold({ weather_location: null })}>Remove location</button>}
+      </section>
+
+      <section className="card settings-section">
+        <h2>Daily reading</h2>
+        <p className="muted small">
+          A chapter of Proverbs by the date, and a Psalm that walks through the book and starts
+          over. Shown in the public-domain World English Bible unless you add a New Living
+          Translation key below — the NLT is copyrighted, so its text cannot ship with the app and
+          is fetched from Tyndale's own API instead. A key is free from{' '}
+          <strong>api.nlt.to</strong>. Chapters are cached after the first fetch, so the hub keeps
+          working offline.
+        </p>
+        <Field label="NLT API key (optional)">
+          <div className="row gap">
+            <input
+              value={nltKey}
+              placeholder="Leave blank to use the World English Bible"
+              onChange={(e) => {
+                setNltKey(e.target.value);
+                setNltSaved('');
+              }}
+            />
+            <button
+              className="btn"
+              disabled={nltKey === (settings.nlt_api_key || '')}
+              onClick={async () => {
+                try {
+                  await withPin((pin) => api.put('/settings', { nlt_api_key: nltKey.trim() }, pin));
+                  setNltSaved(nltKey.trim() ? 'Saved — the reading will switch to the NLT.' : 'Cleared.');
+                } catch (e) {
+                  if (e.message !== 'cancelled') setNltSaved(e.message);
+                }
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </Field>
+        {nltSaved && <p className="muted small">{nltSaved}</p>}
       </section>
 
       <section className="card settings-section">

@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { useApp } from '../store.jsx';
 import { today, startOfWeek, fmtDateLong, currentBucket } from '../dates.js';
 import { Avatar, EventIcon, weatherIcon } from './ui.jsx';
+import ScripturePanel from './Scripture.jsx';
 
 const BUCKET_LABEL = { morning: '🌅 Morning', afternoon: '☀️ Afternoon', evening: '🌙 Evening', any: 'Anytime' };
 
@@ -10,6 +11,7 @@ const PANELS = [
   { id: 'weather', label: 'Weather' },
   { id: 'schedule', label: 'Schedule' },
   { id: 'dinner', label: 'Dinner' },
+  { id: 'scripture', label: "Today's reading" },
   { id: 'chores', label: 'Chores' },
 ];
 
@@ -185,7 +187,7 @@ export default function Today() {
         if (p.id === 'weather') return !!weather;
         if (p.id === 'schedule') return events.length > 0;
         if (p.id === 'dinner') return !!dinner || cooksIds.length > 0;
-        return true;
+        return true; // scripture and chores always have something to show
       }),
     [weather, events.length, dinner, cooksIds.length]
   );
@@ -209,6 +211,7 @@ export default function Today() {
     schedule: <SchedulePanel events={events} members={members} use24h={use24h} />,
     dinner: <DinnerPanel dinner={dinner} cooks={cooks} />,
     chores: <ChoresPanel board={board} members={members} bucket={bucket} />,
+    scripture: <ScripturePanel date={date} />,
   };
 
   const Card = ({ id, className = '' }) => (
@@ -252,6 +255,7 @@ export default function Today() {
           <Card id="schedule" className="today-span2" />
           <Card id="weather" />
           <Card id="dinner" />
+          <Card id="scripture" className="today-full" />
           <Card id="chores" className="today-full" />
         </div>
       )}

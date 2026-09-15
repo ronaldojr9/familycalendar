@@ -3,6 +3,7 @@ import { db, getHousehold, starBalance } from './db.js';
 import { hashPin, verifyPin, requirePin } from './pin.js';
 import { expandEvent, choreDueOn } from './recurrence.js';
 import { holidayChecker } from './holidays.js';
+import { dailyReading, readingFor } from './scripture.js';
 import { getForecast, geocode } from './weather.js';
 import { broadcast } from './ws.js';
 
@@ -541,6 +542,25 @@ api.put('/settings', requirePin, (req, res) => {
   for (const [k, v] of Object.entries(req.body || {})) upsert.run(k, String(v));
   broadcast('settings.updated', {});
   res.json({ ok: true });
+});
+
+// ---------- daily scripture ----------
+
+// A chapter of Proverbs by the date, and a Psalm walking through the book.
+api.get('/scripture', async (req, res) => {
+  const date = String(req.query.date || new Date().toISOString().slice(0, 10));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'date=YYYY-MM-DD required' });
+  try {
+    res.json(await dailyReading(date));
+  } catch (e) {
+    res.status(500).json({ error: 'Could not load the reading', detail: e.message });
+  }
+});
+
+// Just the chapter numbers, for anything that wants the plan without the text.
+api.get('/scripture/plan', (req, res) => {
+  const date = String(req.query.date || new Date().toISOString().slice(0, 10));
+  res.json(readingFor(date));
 });
 
 // ---------- weather ----------

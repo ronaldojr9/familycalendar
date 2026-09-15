@@ -536,3 +536,63 @@ h1, h2, h3 { margin: 0 0 10px; }
   .today-featured .today-schedule-title { font-size: 17px; }
   .today-featured .today-chore-list li { font-size: 16px; }
 }
+
+/* ---------- daily scripture ---------- */
+
+.scripture { display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.scripture-refs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.scripture-ref { font-weight: 700; font-size: 17px; }
+.scripture-ref + .scripture-ref::before { content: '·'; margin-right: 10px; color: var(--text-dim); font-weight: 400; }
+.version-tag {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-dim); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px;
+}
+
+.scripture-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 34px; min-height: 0; }
+/* Full-width card, but the text still stops at a readable measure. */
+.today-full .scripture-cols { max-width: 118ch; }
+.scripture-col { min-width: 0; }
+.scripture-col-ref { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+
+.verses { min-width: 0; }
+.verse { margin: 0 0 7px; line-height: 1.55; }
+.verse-num {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  vertical-align: 0.35em; margin-right: 5px; font-variant-numeric: tabular-nums;
+}
+
+/* On the dashboard the chapter is a taster: clip it and fade the cut so it
+   reads as "there is more", then Read full chapters opens the real thing. */
+.scripture.is-compact .verses.compact {
+  max-height: 168px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+}
+.today-featured .scripture.is-compact .verses.compact { max-height: 46vh; }
+.today-featured .scripture-ref { font-size: 24px; }
+.today-featured .verse { font-size: 19px; line-height: 1.6; }
+.scripture-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: auto; }
+
+/* Full-page reader */
+.reader {
+  position: fixed; inset: 0; z-index: 120; background: var(--bg);
+  display: flex; flex-direction: column;
+}
+.reader-bar {
+  display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  border-bottom: 1px solid var(--border); background: var(--surface); flex: none;
+}
+.reader-bar h2 { margin: 0; font-size: 18px; }
+.reader-bar .spacer { flex: 1; }
+.reader-body { flex: 1; overflow-y: auto; padding: 24px 20px 60px; }
+.reader-passage { max-width: 62ch; margin: 0 auto 44px; }
+.reader-ref { font-size: 26px; margin: 0 0 14px; }
+.verses.full .verse { font-size: 20px; line-height: 1.7; margin-bottom: 11px; }
+.verses.full .verse-num { font-size: 13px; }
+
+@media (max-width: 640px) {
+  .reader-body { padding: 18px 16px 48px; }
+  .reader-ref { font-size: 22px; }
+  .verses.full .verse { font-size: 18px; }
+}

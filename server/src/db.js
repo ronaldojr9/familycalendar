@@ -133,6 +133,15 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS scripture_cache (
+  version TEXT NOT NULL,
+  book TEXT NOT NULL,
+  chapter INTEGER NOT NULL,
+  verses TEXT NOT NULL,
+  fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (version, book, chapter)
+);
+
 CREATE INDEX IF NOT EXISTS idx_event_start ON event (household_id, start_at);
 CREATE INDEX IF NOT EXISTS idx_completion_date ON chore_completion (date);
 CREATE INDEX IF NOT EXISTS idx_ledger_member ON star_ledger (member_id);
