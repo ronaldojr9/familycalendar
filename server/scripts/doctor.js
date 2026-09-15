@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 import { db, dataDir, getHousehold } from '../src/db.js';
 import { choreDueOn } from '../src/recurrence.js';
+import { dailyReading, readingFor } from '../src/scripture.js';
 import { holidayChecker } from '../src/holidays.js';
 
 const ok = (m) => console.log(`  OK    ${m}`);
@@ -97,6 +98,32 @@ for (const m of members) {
 }
 if (household && chores > 0 && due.length === 0) {
   bad('chores exist but none are due today — check the date above is right');
+}
+
+// --- today's reading -------------------------------------------------------
+
+console.log("\nToday's reading");
+try {
+  const plan = readingFor(today);
+  info(`plan: Proverbs ${plan.proverbs}, Psalm ${plan.psalm}`);
+  const key = db.prepare("SELECT value FROM settings WHERE key = 'nlt_api_key'").get()?.value?.trim();
+  const reading = await dailyReading(today);
+  for (const p of reading.passages) {
+    info(`${p.reference.padEnd(13)} ${p.version}  ${p.verses.length} verses`);
+    if (p.note) bad(p.note);
+  }
+  const version = reading.passages[0]?.version;
+  if (version === 'NLT') {
+    const cached = db.prepare("SELECT COUNT(*) AS c FROM scripture_cache WHERE version = 'NLT'").get().c;
+    ok(`reading in the NLT (${cached} chapter${cached === 1 ? '' : 's'} cached locally)`);
+  } else if (key) {
+    bad('an NLT key is set but the reading fell back to the World English Bible — see the reason above');
+  } else {
+    ok('reading in the World English Bible (public domain)');
+    info('Add a free NLT key in Settings -> Daily reading to read the New Living Translation.');
+  }
+} catch (e) {
+  bad(`the reading could not be built: ${e.message}`);
 }
 
 // --- verdict ---------------------------------------------------------------
