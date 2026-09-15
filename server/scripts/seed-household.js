@@ -91,8 +91,15 @@ const RECIPES = [
   ['Pizza', 'Dough, sauce, mozzarella, toppings'],
 ];
 
-// Paul's robotics club: every Monday and Tuesday, 3:00–4:30pm.
-const ROBOTICS = { member: 'Paul', days: [1, 2], start: '15:00', end: '16:30', from: '2026-09-07' };
+// Robotics club. One row per weekly slot, since the boys meet on different
+// days at different times: [member, weekday (0=Sun), start, end].
+const ROBOTICS_FROM = '2026-09-07';
+const ROBOTICS = [
+  ['Paul', 1, '15:00', '16:30'], // Mondays 3:00-4:30pm
+  ['Paul', 2, '15:00', '16:30'], // Tuesdays 3:00-4:30pm
+  ['John', 1, '18:00', '19:30'], // Mondays 6:00-7:30pm
+  ['John', 4, '16:15', '17:45'], // Thursdays 4:15-5:45pm
+];
 
 // ---- Fall 2026 soccer -----------------------------------------------------
 // Games transcribed from the SportsEngine team schedules. Each row is
@@ -366,23 +373,17 @@ seedMeals();
 // --- robotics club ---------------------------------------------------------
 
 const seedEvents = db.transaction(() => {
-  for (const weekday of ROBOTICS.days) {
-    const firstDate = addDaysStr(ROBOTICS.from, (weekday - weekdayOf(ROBOTICS.from) + 7) % 7);
-    const startAt = `${firstDate}T${ROBOTICS.start}`;
-    const endAt = `${firstDate}T${ROBOTICS.end}`;
-    const title = 'Robotics Club';
-    const existing = db
-      .prepare("SELECT * FROM event WHERE title = ? AND start_at = ? AND recurrence_rule = 'weekly'")
-      .get(title, startAt);
-    if (existing) continue;
-    const id = db
-      .prepare(
-        `INSERT INTO event (household_id, title, start_at, end_at, all_day, recurrence_rule)
-         VALUES (?, ?, ?, ?, 0, 'weekly')`
-      )
-      .run(hid, title, startAt, endAt).lastInsertRowid;
-    db.prepare('INSERT OR IGNORE INTO event_member (event_id, member_id) VALUES (?, ?)').run(id, memberIds[ROBOTICS.member]);
-    counts.events++;
+  for (const [member, weekday, start, end] of ROBOTICS) {
+    // Anchor each slot to the first matching weekday on or after the term start.
+    const firstDate = addDaysStr(ROBOTICS_FROM, (weekday - weekdayOf(ROBOTICS_FROM) + 7) % 7);
+    upsertEvent({
+      title: 'Robotics Club',
+      startAt: `${firstDate}T${start}`,
+      endAt: `${firstDate}T${end}`,
+      rule: 'weekly',
+      icon: '🤖',
+      member,
+    });
   }
 });
 seedEvents();

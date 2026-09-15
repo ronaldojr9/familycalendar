@@ -14,7 +14,7 @@ function eventColor(ev, memberById) {
 
 // ---------- event form ----------
 
-const EVENT_ICONS = ['⚽', '🏈', '🏀', '⚾', '🎂', '🎉', '🎵', '🎭', '🏥', '✈️', '🎣', '📚', 'vikings'];
+const EVENT_ICONS = ['⚽', '🏈', '🏀', '⚾', '🤖', '🎂', '🎉', '🎵', '🎭', '🏥', '✈️', '🎣', '📚', 'vikings'];
 
 function EventModal({ initial, onClose, onSaved }) {
   const { members } = useApp();
